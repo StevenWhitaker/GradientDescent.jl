@@ -4,10 +4,10 @@ function preconditioned_gradient_descent(
     step_type::AbstractStepType,
     preconditioner::AbstractMatrix{<:Number},
     func::Union{Nothing,<:Function} = nothing;
-    # TODO: Implement Stopping Criteria
-    # TODO: Implement get_default_stopping_criteria
     stopping_criteria::StoppingCriteria = get_default_stopping_criteria()
 )
+
+    isempty(stopping_criteria) && error("at least one stopping criterion must be specified")
 
     # Set up variables
     x = copy(x0)

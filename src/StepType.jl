@@ -34,7 +34,7 @@ function get_step_size(
     bls::BacktrackingLineSearch,
     x::AbstractVector{<:Number},
     grad::AbstractVector{<:Number},
-    ::Integer
+    iter::Integer
 )
 
     cost = bls.cost_function(x)
@@ -51,7 +51,7 @@ function get_step_size(
     x::AbstractVector{<:Number},
     grad::AbstractVector{<:Number},
     preconditioner::AbstractMatrix{<:Number},
-    ::Integer
+    iter::Integer
 )
 
     cost = bls.cost_function(x)
