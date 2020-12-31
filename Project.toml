@@ -1,0 +1,7 @@
+name = "GradientDescent"
+uuid = "a07bc24c-089c-4998-999d-5f58fed89408"
+authors = ["Steven Whitaker <stwhit@umich.edu>"]
+version = "0.0.0"
+
+[compat]
+julia = "1.5"
