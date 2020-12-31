@@ -2,7 +2,7 @@ function preconditioned_gradient_descent(
     compute_gradient!::Function,
     x0::AbstractVector{<:Number},
     step_type::AbstractStepType,
-    preconditioner::AbstractMatrix{<:Number},
+    preconditioner,
     func::Union{Nothing,<:Function} = nothing;
     stopping_criteria::StoppingCriteria = get_default_stopping_criteria()
 )

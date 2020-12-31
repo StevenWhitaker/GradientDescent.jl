@@ -50,7 +50,7 @@ function get_step_size(
     bls::BacktrackingLineSearch,
     x::AbstractVector{<:Number},
     grad::AbstractVector{<:Number},
-    preconditioner::AbstractMatrix{<:Number},
+    preconditioner,
     iter::Integer
 )
 
