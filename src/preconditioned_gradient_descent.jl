@@ -1,8 +1,7 @@
 function preconditioned_gradient_descent(
     compute_gradient!::Function,
     x0::AbstractVector{<:Number},
-    # TODO: Implement StepType
-    step_type::StepType,
+    step_type::AbstractStepType,
     preconditioner::AbstractMatrix{<:Number},
     func::Union{Nothing,<:Function} = nothing;
     # TODO: Implement Stopping Criteria
@@ -29,12 +28,10 @@ function preconditioned_gradient_descent(
     while flag === :NOT_DONE
 
         # Update variables
-        iter += 1
         compute_gradient!(grad, x)
-        step_size = get_step_size(step_type, x, grad, preconditioner)
-        # TODO: costfun(x .- stepsize .* (P * g)) > (cost - α * stepsize * (g' * P * g))
-        # where P is preconditioner, should be correct for backtracking line search
+        step_size = get_step_size(step_type, x, grad, preconditioner, iter)
         x .-= step_size .* (preconditioner * grad)
+        iter += 1
         time_elapsed = time() - time_start
         isnothing(func) || push!(output, func(x, iter, time_elapsed))
 
