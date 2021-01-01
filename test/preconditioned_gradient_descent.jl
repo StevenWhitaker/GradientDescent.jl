@@ -1,7 +1,7 @@
 function test_preconditioned_gradient_descent_1()
 
     A = Diagonal([1, 4, 3, 3])
-    cost_function = x -> norm(A * x)^2
+    # cost_function = x -> 0.5 * norm(A * x)^2 # Not needed
 
     compute_gradient! = (grad, x) -> grad .= A' * (A * x)
     x0 = ones(size(A, 2))
@@ -22,7 +22,7 @@ function test_preconditioned_gradient_descent_2()
     Random.seed!(0)
 
     A = randn(10, 5)
-    cost_function = x -> norm(A * x)^2
+    cost_function = x -> 0.5 * norm(A * x)^2
 
     compute_gradient! = (grad, x) -> grad .= A' * (A * x)
     x0 = randn(size(A, 2))
@@ -61,6 +61,36 @@ function test_box_constraints_transform_1()
 
 end
 
+function test_compute_gradient_box_constraints_1()
+
+    A = Diagonal([1, 4, 3, 3])
+    cost_function = x -> 0.5 * norm(A * x)^2
+    compute_gradient! = (grad, x) -> grad .= A' * (A * x)
+    grad = zeros(size(A, 2))
+    x = ones(size(A, 2))
+    lower_bounds = [-10, -5, -Inf, 1]
+    upper_bounds = [10, Inf, 5, 1]
+    t = GradientDescent._box_constraints_transform(x, lower_bounds, upper_bounds)
+    cost_function_box_constraints = t -> cost_function(
+        GradientDescent._box_constraints_inverse_transform(t, lower_bounds,
+                                                           upper_bounds))
+
+    GradientDescent._compute_gradient_box_constraints!(compute_gradient!, grad,
+                                               x, t, lower_bounds, upper_bounds)
+
+    ϵ = 1e-5
+    grad_t = zeros(size(grad))
+    for i = 1:length(grad_t)
+        ϵvec = zeros(length(grad_t))
+        ϵvec[i] = ϵ
+        grad_t[i] = (cost_function_box_constraints(t + ϵvec) -
+                     cost_function_box_constraints(t - ϵvec)) / 2ϵ
+    end
+
+    return grad ≈ grad_t
+
+end
+
 @testset "Preconditioned Gradient Descent" begin
 
     @test test_preconditioned_gradient_descent_1()
@@ -71,5 +101,6 @@ end
 @testset "Box Constraints Transform" begin
 
     @test test_box_constraints_transform_1()
+    @test test_compute_gradient_box_constraints_1()
 
 end
