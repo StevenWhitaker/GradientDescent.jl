@@ -122,6 +122,7 @@ function preconditioned_gradient_descent(
     isempty(stopping_criteria) && error("at least one stopping criterion must be specified")
 
     # Set up variables
+    x = copy(x0)
     t = _box_constraints_transform(x0, lower_bounds, upper_bounds)
     t_prev = copy(t)
     grad = Vector{float(eltype(t))}(undef, length(t))
@@ -132,7 +133,6 @@ function preconditioned_gradient_descent(
     flag = :NOT_DONE
     if !isnothing(func)
         output = Array{Any}(undef, 1)
-        x = _box_constraints_inverse_transform(t, lower_bounds, upper_bounds)
         output[1] = func(x, iter, time_elapsed)
     end
 
@@ -141,15 +141,13 @@ function preconditioned_gradient_descent(
     while flag === :NOT_DONE
 
         # Update variables
-        _compute_gradient_box_constraints!(compute_gradient!, grad, t, lower_bounds, upper_bounds)
+        _compute_gradient_box_constraints!(compute_gradient!, grad, x, t, lower_bounds, upper_bounds)
         step_size = get_step_size(step_type, t, grad, preconditioner, iter)
         t .-= step_size .* (preconditioner * grad)
+        _box_constraints_inverse_transform!(x, t, lower_bounds, upper_bounds)
         iter += 1
         time_elapsed = time() - time_start
-        if !isnothing(func)
-            _box_constraints_inverse_transform!(x, t, lower_bounds, upper_bounds)
-            push!(output, func(x, iter, time_elapsed))
-        end
+        isnothing(func) || push!(output, func(x, iter, time_elapsed))
 
         # Check stopping criteria
         flag = check_stopping_criteria(stopping_criteria, t, t_prev,
@@ -163,7 +161,6 @@ function preconditioned_gradient_descent(
 
     end
 
-    x = _box_constraints_inverse_transform(t, lower_bounds, upper_bounds)
     return isnothing(func) ? (x, flag) : (x, flag, output)
 
 end
@@ -175,7 +172,7 @@ function _box_constraints_transform(x, lower_bounds, upper_bounds)
     # Indices with both lower and upper bounds
     i = (-Inf .< lower_bounds) .& (upper_bounds .< Inf)
     half_width = (upper_bounds[i] .- lower_bounds[i]) ./ 2
-    t[i] .= tan.((x[i] .- half_width .- lower_bounds[i]) ./ (half_width .* (2 / π)))
+    t[i] .= tan.((x[i] .- half_width .- lower_bounds[i]) ./ (half_width .* (2 ./ π)))
 
     # Indices with just lower bounds
     i = (lower_bounds .> -Inf) .& (upper_bounds .== Inf)
@@ -209,7 +206,7 @@ function _box_constraints_inverse_transform!(x, t, lower_bounds, upper_bounds)
     # Indices with both lower and upper bounds
     i = (-Inf .< lower_bounds) .& (upper_bounds .< Inf)
     half_width = (upper_bounds[i] .- lower_bounds[i]) ./ 2
-    x[i] .= half_width .* (2 / π) .* atan.(t[i]) .+ half_width .+ lower_bounds[i]
+    x[i] .= half_width .* (2 ./ π) .* atan.(t[i]) .+ half_width .+ lower_bounds[i]
 
     # Indices with just lower bounds
     i = (lower_bounds .> -Inf) .& (upper_bounds .== Inf)
@@ -223,8 +220,29 @@ function _box_constraints_inverse_transform!(x, t, lower_bounds, upper_bounds)
 
 end
 
-function _compute_gradient_box_constraints!(compute_gradient!, grad, t, lower_bounds, upper_bounds)
+function _compute_gradient_box_constraints!(compute_gradient!, grad, x, t, lower_bounds, upper_bounds)
 
-    # TODO: ∇f(x) .* d_atan(t)
+    compute_gradient!(grad, x)
+
+    # Indices with both lower and upper bounds
+    i = (-Inf .< lower_bounds) .& (upper_bounds .< Inf)
+    half_width = (upper_bounds[i] .- lower_bounds[i]) ./ 2
+    grad[i] .*= (half_width .* (2 ./ π)) ./ (1 .+ t[i].^2)
+
+    # Indices with just lower bounds
+    i = (lower_bounds .> -Inf) .& (upper_bounds .== Inf)
+    grad[i] .*= exp.(t[i])
+
+    # Indices with just upper bounds
+    i = (upper_bounds .< Inf) .& (lower_bounds .== -Inf)
+    grad[i] .*= exp.(-t[i])
+
+    # Indices with equal lower and upper bounds
+    # This case is needed to avoid infinitely large gradients
+    # when lower_bounds == upper_bounds == ±Inf
+    i = lower_bounds .== upper_bounds
+    grad[i] .= zero(eltype(grad))
+
+    return
 
 end
