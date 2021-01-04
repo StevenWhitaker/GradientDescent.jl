@@ -37,7 +37,7 @@ function test_gradient_descent_3()
 
     compute_gradient! = (grad, x) -> grad .= A' * (A * x)
     x0 = ones(size(A, 2))
-    step_type = FixedStepSize(1e-3)
+    step_type = FixedStepSize(1 / opnorm(A)^2)
     lower_bounds = [-10, -5, -Inf, 1]
     upper_bounds = [10, Inf, 5, 1]
     stopping_criteria = GradientTolerance(1e-10)
