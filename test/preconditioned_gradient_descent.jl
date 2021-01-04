@@ -37,6 +37,94 @@ function test_preconditioned_gradient_descent_2()
 
 end
 
+function test_preconditioned_gradient_descent_3()
+
+    A = Diagonal([1, 4, 3, 3])
+    # cost_function = x -> 0.5 * norm(A * x)^2 # Not needed
+
+    compute_gradient! = (grad, x) -> grad .= A' * (A * x)
+    x0 = ones(size(A, 2))
+    step_type = FixedStepSize(1e-3)
+    preconditioner = inv(A' * A)
+    lower_bounds = [-10, -5, -Inf, 1]
+    upper_bounds = [10, Inf, 5, 1]
+    stopping_criteria = GradientTolerance(1e-10)
+
+    (x, flag) = preconditioned_gradient_descent(compute_gradient!, x0,
+        step_type, preconditioner, lower_bounds, upper_bounds;
+        stopping_criteria)
+    return x ≈ [0, 0, 0, 1] &&
+           flag === :GRAD_TOL_LIMIT
+
+end
+
+function test_preconditioned_gradient_descent_4()
+
+    A = Diagonal([1, 4, 3, 3])
+    cost_function = x -> 0.5 * norm(A * x)^2
+
+    compute_gradient! = (grad, x) -> grad .= A' * (A * x)
+    x0 = ones(size(A, 2))
+    step_type = BacktrackingLineSearch(cost_function)
+    preconditioner = inv(A' * A)
+    lower_bounds = [-10, -5, -Inf, 1]
+    upper_bounds = [10, Inf, 5, 1]
+    stopping_criteria = XTolerance(1e-8)
+
+    (x, flag) = preconditioned_gradient_descent(compute_gradient!, x0,
+        step_type, preconditioner, lower_bounds, upper_bounds;
+        stopping_criteria)
+    return isapprox(x, [0, 0, 0, 1]; atol = 1e-8) &&
+           flag === :X_TOL_LIMIT
+
+end
+
+function test_preconditioned_gradient_descent_5()
+
+    A = Diagonal([1, 4, 3, 3])
+    y = ones(size(A, 1))
+    cost_function = x -> 0.5 * norm(A * x - y)^2
+
+    compute_gradient! = (grad, x) -> grad .= A' * (A * x - y)
+    x0 = ones(size(A, 2))
+    step_type = BacktrackingLineSearch(cost_function)
+    preconditioner = inv(A' * A)
+    lower_bounds = [-10, -5, -Inf, 1]
+    upper_bounds = [10, Inf, 5, 1]
+    stopping_criteria = XTolerance(1e-9)
+
+    (x, flag) = preconditioned_gradient_descent(compute_gradient!, x0,
+        step_type, preconditioner, lower_bounds, upper_bounds;
+        stopping_criteria)
+    xhat = A \ y
+    xhat[4] = lower_bounds[4]
+    return isapprox(x, xhat; atol = 1e-8) &&
+           flag === :X_TOL_LIMIT
+
+end
+
+function test_preconditioned_gradient_descent_6()
+
+    A = Diagonal([1, 4, 3, 1])
+    y = ones(size(A, 1))
+    cost_function = x -> 0.5 * norm(A * x - y)^2
+
+    compute_gradient! = (grad, x) -> grad .= A' * (A * x - y)
+    x0 = ones(size(A, 2))
+    step_type = BacktrackingLineSearch(cost_function)
+    preconditioner = inv(A' * A)
+    lower_bounds = [-10, -5, -Inf, 1]
+    upper_bounds = [10, Inf, 5, 1]
+
+    (x, flag) = preconditioned_gradient_descent(compute_gradient!, x0,
+        step_type, preconditioner, lower_bounds, upper_bounds)
+    xhat = A \ y
+    xhat[4] = lower_bounds[4]
+    return x ≈ xhat &&
+           flag === :GRAD_TOL_ABS_LIMIT
+
+end
+
 function test_box_constraints_transform_1()
 
     Random.seed!(0)
@@ -95,6 +183,10 @@ end
 
     @test test_preconditioned_gradient_descent_1()
     @test test_preconditioned_gradient_descent_2()
+    @test test_preconditioned_gradient_descent_3()
+    @test test_preconditioned_gradient_descent_4()
+    @test test_preconditioned_gradient_descent_5()
+    @test test_preconditioned_gradient_descent_6()
 
 end
 
