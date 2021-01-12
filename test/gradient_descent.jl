@@ -111,6 +111,32 @@ function test_gradient_descent_6()
 
 end
 
+function test_gradient_descent_7()
+
+    A = Diagonal([1, 4, 3, 3])
+    # cost_function = x -> 0.5 * norm(A * x)^2 # Not needed
+
+    compute_gradient! = (grad, x) -> grad .= A' * (A * x)
+    x0 = ones(size(A, 2))
+    niter = 10
+    step_type = ComputedStepSize(
+        (x, grad, P, iter) -> 0 <= iter <= niter ? 1 / opnorm(A)^2 : 0
+    )
+    lower_bounds = [-10, -5, -Inf, 1]
+    upper_bounds = [10, Inf, 5, 1]
+    stopping_criteria_1 = MaxIterations(niter)
+    stopping_criteria_2 = MaxIterations(niter + 10)
+
+    (x_1,) = gradient_descent(compute_gradient!, x0, step_type, lower_bounds,
+                              upper_bounds;
+                              stopping_criteria = stopping_criteria_1)
+    (x_2,) = gradient_descent(compute_gradient!, x0, step_type, lower_bounds,
+                              upper_bounds;
+                              stopping_criteria = stopping_criteria_2)
+    return x_1 == x_2
+
+end
+
 @testset "Gradient Descent" begin
 
     @test test_gradient_descent_1()
@@ -119,5 +145,6 @@ end
     @test test_gradient_descent_4()
     @test test_gradient_descent_5()
     @test test_gradient_descent_6()
+    @test test_gradient_descent_7()
 
 end

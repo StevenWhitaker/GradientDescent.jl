@@ -28,10 +28,10 @@ function preconditioned_gradient_descent(
     while flag === :NOT_DONE
 
         # Update variables
+        iter += 1
         compute_gradient!(grad, x)
         step_size = get_step_size(step_type, x, grad, preconditioner, iter)
         x .-= step_size .* (preconditioner * grad)
-        iter += 1
         time_elapsed = time() - time_start
         isnothing(func) || push!(output, func(x, iter, time_elapsed))
 
@@ -54,7 +54,7 @@ end
 function preconditioned_gradient_descent(
     compute_gradient!::Function,
     x0::AbstractVector{<:Real},
-    step_type::FixedStepSize,
+    step_type::AbstractStepType,
     preconditioner,
     lower_bounds::AbstractVector{<:Real},
     upper_bounds::AbstractVector{<:Real},
@@ -85,11 +85,11 @@ function preconditioned_gradient_descent(
     while flag === :NOT_DONE
 
         # Update variables
+        iter += 1
         compute_gradient!(grad, x)
         step_size = get_step_size(step_type, x, grad, preconditioner, iter)
         x .-= step_size .* (preconditioner * grad)
         x .= min.(max.(x, lower_bounds), upper_bounds)
-        iter += 1
         time_elapsed = time() - time_start
         isnothing(func) || push!(output, func(x, iter, time_elapsed))
 
@@ -112,7 +112,7 @@ end
 function preconditioned_gradient_descent(
     compute_gradient!::Function,
     x0::AbstractVector{<:Real},
-    step_type::AbstractStepType,
+    step_type::BacktrackingLineSearch,
     preconditioner,
     lower_bounds::AbstractVector{<:Real},
     upper_bounds::AbstractVector{<:Real},
@@ -248,12 +248,6 @@ function _compute_gradient_box_constraints!(compute_gradient!, grad, x, t, lower
     grad[i] .= zero(eltype(grad))
 
     return
-
-end
-
-function _incorporate_box_constraints_step_type(fixed_step::FixedStepSize, lower_bounds, upper_bounds)
-
-    return fixed_step
 
 end
 

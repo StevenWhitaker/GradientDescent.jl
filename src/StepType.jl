@@ -40,22 +40,6 @@ function get_step_size(
     bls::BacktrackingLineSearch,
     x::AbstractVector{<:Number},
     grad::AbstractVector{<:Number},
-    iter::Integer
-)
-
-    cost = bls.cost_function(x)
-    step_size = bls.max_step_size
-    while bls.cost_function(x .- step_size .* grad) > (cost - bls.slope * step_size * (grad' * grad))
-        step_size *= bls.shrinkage
-    end
-    return step_size
-
-end
-
-function get_step_size(
-    bls::BacktrackingLineSearch,
-    x::AbstractVector{<:Number},
-    grad::AbstractVector{<:Number},
     preconditioner,
     iter::Integer
 )

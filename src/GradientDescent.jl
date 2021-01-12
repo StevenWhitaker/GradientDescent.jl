@@ -3,6 +3,7 @@ module GradientDescent
 using LinearAlgebra: norm, I
 
 export BacktrackingLineSearch
+export ComputedStepSize
 export FixedStepSize
 
 export GradientTolerance
