@@ -6,6 +6,12 @@ end
 
 get_step_size(fixed_step::FixedStepSize, args...) = fixed_step.step_size
 
+struct ComputedStepSize{F<:Function} <: AbstractStepType
+    func::F
+end
+
+get_step_size(computed::ComputedStepSize, args...) = computed.func(args...)
+
 struct BacktrackingLineSearch{F<:Function,T<:Real} <: AbstractStepType
     cost_function::F
     slope::T
